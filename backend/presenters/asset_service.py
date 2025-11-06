@@ -3,6 +3,10 @@ Asset service/presenter for business logic.
 """
 from backend.models.asset import AssetModel
 from backend.models.asset_detail import AssetDetailJewelleryModel, AssetDetailDocumentModel
+from backend.models.transaction import TransactionModel
+from backend.models.asset_edit_log import AssetEditLogModel
+from backend.models.asset_file import AssetFileModel
+from backend.models.locker_file_storage import LockerFileStorageModel
 
 
 class AssetService:
@@ -31,6 +35,27 @@ class AssetService:
                     asset['document_details'] = {
                         'document_type': detail.get('document_type')
                     }
+            
+            # Get thumbnail file from LockerFileStorage first
+            thumbnail = LockerFileStorageModel.get_thumbnail_by_asset_id(asset_id)
+            if thumbnail:
+                asset['thumbnail'] = thumbnail
+            else:
+                # Fallback to AssetFile for backward compatibility
+                thumbnail = AssetFileModel.get_thumbnail_by_asset_id(asset_id)
+                if thumbnail:
+                    # Convert AssetFile format to match expected format
+                    asset['thumbnail'] = {
+                        'id': thumbnail['id'],
+                        'file_path': thumbnail['file_path'],
+                        'file_name': thumbnail['file_name'],
+                        'file_type': thumbnail['file_type'],
+                        'thumbnail_path': None  # Old files don't have thumbnails
+                    }
+            
+            # Get edit logs for each asset
+            edit_logs = AssetEditLogModel.get_by_asset_id(asset_id)
+            asset['edit_logs'] = edit_logs
         
         return assets
     
@@ -57,6 +82,34 @@ class AssetService:
                 asset['document_details'] = {
                     'document_type': detail.get('document_type')
                 }
+        
+        # Get files from LockerFileStorage
+        files = LockerFileStorageModel.get_by_asset_id(asset_id)
+        if not files:
+            # Fallback to AssetFile
+            files = AssetFileModel.get_by_asset_id(asset_id)
+        asset['files'] = files
+        
+        # Get thumbnail
+        thumbnail = LockerFileStorageModel.get_thumbnail_by_asset_id(asset_id)
+        if thumbnail:
+            asset['thumbnail'] = thumbnail
+        else:
+            # Fallback to AssetFile for backward compatibility
+            thumbnail = AssetFileModel.get_thumbnail_by_asset_id(asset_id)
+            if thumbnail:
+                # Convert AssetFile format to match expected format
+                asset['thumbnail'] = {
+                    'id': thumbnail['id'],
+                    'file_path': thumbnail['file_path'],
+                    'file_name': thumbnail['file_name'],
+                    'file_type': thumbnail['file_type'],
+                    'thumbnail_path': None  # Old files don't have thumbnails
+                }
+        
+        # Get edit logs
+        edit_logs = AssetEditLogModel.get_by_asset_id(asset_id)
+        asset['edit_logs'] = edit_logs
         
         return asset
     
@@ -96,6 +149,14 @@ class AssetService:
                 document_type=data.get('document_type')
             )
         
+        # Create initial DEPOSIT transaction
+        TransactionModel.create(
+            asset_id=asset_id,
+            transaction_type='DEPOSIT',
+            reason='Initial deposit upon asset creation',
+            responsible_person=data.get('responsible_person')
+        )
+        
         return AssetService.get_asset_by_id(asset_id)
     
     @staticmethod
@@ -104,6 +165,9 @@ class AssetService:
         asset = AssetModel.get_by_id(asset_id)
         if not asset:
             raise ValueError("Asset not found")
+        
+        # Store old asset data for edit logging
+        old_asset = AssetService.get_asset_by_id(asset_id)
         
         current_type = asset['asset_type']
         new_type = data.get('asset_type', current_type)
@@ -155,7 +219,11 @@ class AssetService:
                     document_type=data.get('document_type')
                 )
         
-        return AssetService.get_asset_by_id(asset_id)
+        # Log all field changes
+        updated_asset = AssetService.get_asset_by_id(asset_id)
+        AssetEditLogModel.log_asset_update(asset_id, old_asset, data)
+        
+        return updated_asset
     
     @staticmethod
     def delete_asset(asset_id):

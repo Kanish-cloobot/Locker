@@ -8,6 +8,8 @@ import AssetService from '../presenters/assetService';
 import AssetModal from './AssetModal';
 import EditLockerModal from './EditLockerModal';
 import ConfirmationModal from './ConfirmationModal';
+import EditLogModal from './EditLogModal';
+import FileService from '../presenters/fileService';
 import '../styles/LockerDetailPage.css';
 
 function LockerDetailPage() {
@@ -22,6 +24,8 @@ function LockerDetailPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [assetToDelete, setAssetToDelete] = useState(null);
   const [editingAsset, setEditingAsset] = useState(null);
+  const [showEditLogModal, setShowEditLogModal] = useState(false);
+  const [selectedAssetForLogs, setSelectedAssetForLogs] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -47,11 +51,21 @@ function LockerDetailPage() {
 
   const handleCreateAsset = async (assetData) => {
     try {
-      await AssetService.createAsset(id, assetData);
-      setShowAssetModal(false);
-      loadData();
+      const newAsset = await AssetService.createAsset(id, assetData);
+      // Reload to get full asset data including files
+      await loadData();
+      // Open modal again with the new asset for file upload
+      const updatedAssets = await AssetService.getAssetsByLocker(id);
+      const createdAsset = updatedAssets.find(a => a.id === newAsset.id);
+      if (createdAsset) {
+        setEditingAsset(createdAsset);
+        setShowAssetModal(true);
+      } else {
+        setShowAssetModal(false);
+      }
     } catch (err) {
       alert('Failed to create asset: ' + err.message);
+      setShowAssetModal(false);
     }
   };
 
@@ -163,6 +177,7 @@ function LockerDetailPage() {
             <table className="assets-table">
               <thead>
                 <tr>
+                  <th>Preview</th>
                   <th>Name</th>
                   <th>Type</th>
                   <th>Worth</th>
@@ -174,6 +189,59 @@ function LockerDetailPage() {
               <tbody>
                 {assets.map(asset => (
                   <tr key={asset.id}>
+                    <td>
+                      {asset.thumbnail ? (
+                        asset.thumbnail.file_type === 'PDF' ? (
+                          <div 
+                            className="asset-pdf-preview"
+                            title={`PDF: ${asset.thumbnail.original_file_name || 'Document'}`}
+                            onClick={() => window.open(FileService.getFileUrl(asset.thumbnail.id), '_blank')}
+                          >
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="#e74c3c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M14 2V8H20" stroke="#e74c3c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M16 13H8" stroke="#e74c3c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M16 17H8" stroke="#e74c3c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M10 9H9H8" stroke="#e74c3c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            <span>PDF</span>
+                          </div>
+                        ) : (
+                          <>
+                            <img 
+                              src={
+                                asset.thumbnail.thumbnail_path 
+                                  ? FileService.getThumbnailUrl(asset.thumbnail.id)
+                                  : FileService.getFileUrl(asset.thumbnail.id)
+                              }
+                              alt={asset.name}
+                              className="asset-thumbnail"
+                              onError={(e) => {
+                                // Hide image and show placeholder
+                                e.target.style.display = 'none';
+                                const placeholder = e.target.parentElement.querySelector('.asset-thumbnail-placeholder');
+                                if (placeholder) {
+                                  placeholder.style.display = 'flex';
+                                }
+                              }}
+                            />
+                            <div 
+                              className="asset-thumbnail-placeholder" 
+                              style={{ display: 'none' }}
+                            >
+                              No Image
+                            </div>
+                          </>
+                        )
+                      ) : (
+                        <div 
+                          className="asset-thumbnail-placeholder" 
+                          style={{ display: 'flex' }}
+                        >
+                          No Image
+                        </div>
+                      )}
+                    </td>
                     <td>{asset.name}</td>
                     <td>
                       <span className={`asset-type-badge ${asset.asset_type.toLowerCase()}`}>
@@ -218,6 +286,16 @@ function LockerDetailPage() {
                         >
                           Delete
                         </button>
+                        <button 
+                          className="history-button"
+                          onClick={() => {
+                            setSelectedAssetForLogs(asset);
+                            setShowEditLogModal(true);
+                          }}
+                          title="View Edit History"
+                        >
+                          History
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -255,6 +333,18 @@ function LockerDetailPage() {
         confirmText="Delete"
         cancelText="Cancel"
       />
+
+      {showEditLogModal && selectedAssetForLogs && (
+        <EditLogModal
+          isOpen={showEditLogModal}
+          onClose={() => {
+            setShowEditLogModal(false);
+            setSelectedAssetForLogs(null);
+          }}
+          editLogs={selectedAssetForLogs.edit_logs || []}
+          assetName={selectedAssetForLogs.name}
+        />
+      )}
     </div>
   );
 }

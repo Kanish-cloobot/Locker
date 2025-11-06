@@ -2,6 +2,7 @@
 Locker service/presenter for business logic.
 """
 from backend.models.locker import LockerModel
+from backend.presenters.dashboard_service import DashboardService
 
 
 class LockerService:
@@ -9,8 +10,22 @@ class LockerService:
     
     @staticmethod
     def get_all_lockers():
-        """Get all lockers."""
-        return LockerModel.get_all()
+        """Get all lockers with asset counts."""
+        lockers = LockerModel.get_all()
+        
+        # Add asset counts for each locker
+        for locker in lockers:
+            try:
+                stats = DashboardService.get_locker_stats(locker['id'])
+                locker['total_assets'] = stats.get('total_assets', 0)
+                locker['withdrawn_assets'] = stats.get('withdrawn_assets', 0)
+            except Exception as e:
+                # If stats fail, set defaults but still return the locker
+                print(f"Error getting stats for locker {locker['id']}: {str(e)}")
+                locker['total_assets'] = 0
+                locker['withdrawn_assets'] = 0
+        
+        return lockers
     
     @staticmethod
     def get_locker_by_id(locker_id):

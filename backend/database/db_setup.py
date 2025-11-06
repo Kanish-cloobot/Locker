@@ -86,6 +86,77 @@ def init_database():
         )
     ''')
     
+    # Create Transaction table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS "Transaction" (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            asset_id INTEGER NOT NULL,
+            transaction_type TEXT NOT NULL CHECK(transaction_type IN ('DEPOSIT', 'WITHDRAW', 'PERMANENT_REMOVE')),
+            reason TEXT,
+            responsible_person TEXT,
+            org_id INTEGER NOT NULL DEFAULT 1,
+            user_id INTEGER NOT NULL DEFAULT 1,
+            status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'deleted')),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (asset_id) REFERENCES Asset(id)
+        )
+    ''')
+    
+    # Create AssetEditLog table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS AssetEditLog (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            asset_id INTEGER NOT NULL,
+            field_name TEXT NOT NULL,
+            old_value TEXT,
+            new_value TEXT,
+            org_id INTEGER NOT NULL DEFAULT 1,
+            user_id INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (asset_id) REFERENCES Asset(id)
+        )
+    ''')
+    
+    # Create AssetFile table (keeping for backward compatibility)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS AssetFile (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            asset_id INTEGER NOT NULL,
+            file_name TEXT NOT NULL,
+            file_path TEXT NOT NULL,
+            file_type TEXT NOT NULL CHECK(file_type IN ('IMAGE', 'PDF')),
+            org_id INTEGER NOT NULL DEFAULT 1,
+            user_id INTEGER NOT NULL DEFAULT 1,
+            status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'deleted')),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (asset_id) REFERENCES Asset(id)
+        )
+    ''')
+    
+    # Create LockerFileStorage table - comprehensive file storage
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS LockerFileStorage (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            asset_id INTEGER NOT NULL,
+            original_file_name TEXT NOT NULL,
+            stored_file_name TEXT NOT NULL,
+            file_path TEXT NOT NULL,
+            file_type TEXT NOT NULL CHECK(file_type IN ('IMAGE', 'PDF')),
+            file_size INTEGER,
+            mime_type TEXT,
+            thumbnail_path TEXT,
+            is_thumbnail BOOLEAN DEFAULT 0,
+            org_id INTEGER NOT NULL DEFAULT 1,
+            user_id INTEGER NOT NULL DEFAULT 1,
+            status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'deleted')),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (asset_id) REFERENCES Asset(id)
+        )
+    ''')
+    
     # Add status column to existing tables if they don't have it (migration)
     try:
         cursor.execute("ALTER TABLE Locker ADD COLUMN status TEXT DEFAULT 'active'")

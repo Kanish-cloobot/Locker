@@ -16,7 +16,8 @@ class AssetService {
         throw new Error('Failed to fetch assets');
       }
       const data = await response.json();
-      return data.map(asset => new Asset(asset));
+      const assets = data.map(asset => new Asset(asset));
+      return assets;
     } catch (error) {
       console.error('Error fetching assets:', error);
       throw error;

@@ -2,6 +2,8 @@
  * Modal component for creating/editing assets.
  */
 import React, { useState, useEffect } from 'react';
+import FileService from '../presenters/fileService';
+import PDFPreview from '../components/PDFPreview';
 import '../styles/Modal.css';
 
 function AssetModal({ onClose, onSave, asset }) {
@@ -18,6 +20,8 @@ function AssetModal({ onClose, onSave, asset }) {
     document_type: ''
   });
   const [errors, setErrors] = useState({});
+  const [files, setFiles] = useState([]);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (asset) {
@@ -32,6 +36,7 @@ function AssetModal({ onClose, onSave, asset }) {
         gifting_details: asset.jewellery_details?.gifting_details || '',
         document_type: asset.document_details?.document_type || ''
       });
+      setFiles(asset.files || []);
     }
   }, [asset]);
 
@@ -82,6 +87,49 @@ function AssetModal({ onClose, onSave, asset }) {
       }
 
       onSave(submitData);
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (!asset || !asset.id) {
+      alert('Please save the asset first before uploading files');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const uploadedFile = await FileService.uploadFile(asset.id, file);
+      setFiles(prev => [...prev, uploadedFile]);
+    } catch (err) {
+      alert('Failed to upload file: ' + err.message);
+    } finally {
+      setUploading(false);
+      e.target.value = ''; // Reset input
+    }
+  };
+
+  const getFileType = (file) => {
+    if (file.file_type) {
+      return file.file_type;
+    }
+    const fileName = file.original_file_name || file.file_name || '';
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    if (ext === 'pdf') return 'PDF';
+    if (['png', 'jpg', 'jpeg', 'gif'].includes(ext)) return 'IMAGE';
+    return 'UNKNOWN';
+  };
+
+  const handleFileDelete = async (fileId) => {
+    if (!window.confirm('Are you sure you want to delete this file?')) return;
+    
+    try {
+      await FileService.deleteFile(fileId);
+      setFiles(prev => prev.filter(f => f.id !== fileId));
+    } catch (err) {
+      alert('Failed to delete file: ' + err.message);
     }
   };
 
@@ -211,6 +259,77 @@ function AssetModal({ onClose, onSave, asset }) {
               placeholder="Additional notes about this asset"
             />
           </div>
+
+          {isEditing && (
+            <div className="form-group">
+              <label>Files (Images/PDFs)</label>
+              <input
+                type="file"
+                accept="image/*,.pdf"
+                onChange={handleFileUpload}
+                disabled={uploading}
+                className="file-input"
+              />
+              {uploading && <p className="uploading-message">Uploading...</p>}
+              {files.length > 0 && (
+                <div className="files-preview-container">
+                  {files.map(file => {
+                    const fileType = getFileType(file);
+                    return (
+                      <div key={file.id} className="file-preview-item">
+                        <div className="file-preview-header">
+                          <span className="file-name">
+                            {file.original_file_name || file.file_name}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleFileDelete(file.id)}
+                            className="delete-file-button"
+                            title="Delete file"
+                          >
+                            ×
+                          </button>
+                        </div>
+                        {fileType === 'PDF' ? (
+                          <PDFPreview file={file} />
+                        ) : fileType === 'IMAGE' ? (
+                          <div className="image-preview-container">
+                            <img
+                              src={file.thumbnail_path ? FileService.getThumbnailUrl(file.id) : FileService.getFileUrl(file.id)}
+                              alt={file.original_file_name || file.file_name}
+                              className="image-preview"
+                              onError={(e) => {
+                                e.target.src = FileService.getFileUrl(file.id);
+                              }}
+                            />
+                            <a
+                              href={FileService.getFileUrl(file.id)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="view-full-image-link"
+                            >
+                              View Full Size
+                            </a>
+                          </div>
+                        ) : (
+                          <div className="file-link-container">
+                            <a 
+                              href={FileService.getFileUrl(file.id)} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="file-download-link"
+                            >
+                              Download {file.original_file_name || file.file_name}
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="modal-actions">
             <button type="button" onClick={onClose} className="cancel-button">

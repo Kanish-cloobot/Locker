@@ -14,7 +14,11 @@ def get_all_lockers():
         lockers = LockerService.get_all_lockers()
         return jsonify(lockers), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"Error getting all lockers: {str(e)}")
+        print(f"Traceback: {error_trace}")
+        return jsonify({'error': str(e), 'traceback': error_trace}), 500
 
 
 @locker_bp.route('/api/lockers/<int:locker_id>', methods=['GET'])

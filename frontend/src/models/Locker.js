@@ -11,6 +11,8 @@ class Locker {
     this.address = data.address || '';
     this.created_at = data.created_at || '';
     this.updated_at = data.updated_at || '';
+    this.total_assets = data.total_assets || 0;
+    this.withdrawn_assets = data.withdrawn_assets || 0;
   }
 
   toJSON() {

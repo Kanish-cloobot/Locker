@@ -5,6 +5,8 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import HomePage from './views/HomePage';
 import LockerDetailPage from './views/LockerDetailPage';
+import TransactionLedgerPage from './views/TransactionLedgerPage';
+import LockerDashboardPage from './views/LockerDashboardPage';
 import './styles/App.css';
 
 function App() {
@@ -14,6 +16,8 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/locker/:id" element={<LockerDetailPage />} />
+          <Route path="/transactions" element={<TransactionLedgerPage />} />
+          <Route path="/dashboard" element={<LockerDashboardPage />} />
         </Routes>
       </div>
     </Router>

@@ -18,6 +18,13 @@ class Asset {
     // Detail fields
     this.jewellery_details = data.jewellery_details || null;
     this.document_details = data.document_details || null;
+    
+    // File fields
+    this.thumbnail = data.thumbnail || null;
+    this.files = data.files || [];
+    
+    // Edit logs
+    this.edit_logs = data.edit_logs || [];
   }
 
   toJSON() {

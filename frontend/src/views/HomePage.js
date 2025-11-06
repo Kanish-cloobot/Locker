@@ -83,48 +83,115 @@ function HomePage() {
     <div className="home-page">
       <div className="home-header">
         <h1>Family Locker Organizer</h1>
-        <button 
-          className="create-locker-button"
-          onClick={() => setShowCreateModal(true)}
-        >
-          + Create New Locker
-        </button>
+        <div className="header-actions">
+          <button 
+            className="nav-button"
+            onClick={() => navigate('/dashboard')}
+          >
+            Dashboard
+          </button>
+          <button 
+            className="nav-button"
+            onClick={() => navigate('/transactions')}
+          >
+            Transactions
+          </button>
+          <button 
+            className="create-locker-button"
+            onClick={() => setShowCreateModal(true)}
+          >
+            + Create New Locker
+          </button>
+        </div>
       </div>
 
       {error && <div className="error-message">{error}</div>}
 
-      <div className="lockers-grid">
-        {lockers.length === 0 ? (
-          <div className="empty-state">
-            <p>No lockers found. Create your first locker to get started!</p>
-          </div>
-        ) : (
-          lockers.map(locker => (
-            <div 
-              key={locker.id} 
-              className="locker-card"
-              onClick={() => handleLockerClick(locker.id)}
-            >
-              <div className="locker-card-header">
-                <h2>{locker.name}</h2>
-                <button
-                  className="delete-button"
-                  onClick={(e) => handleDeleteClick(locker.id, e)}
-                  title="Delete locker"
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-              </div>
-              <div className="locker-card-body">
-                <p className="location-name">{locker.location_name}</p>
-                <p className="address">{locker.address}</p>
+      {lockers.length === 0 ? (
+        <div className="empty-state">
+          <p>No lockers found. Create your first locker to get started!</p>
+        </div>
+      ) : (
+        <>
+          {lockers.filter(l => (l.withdrawn_assets || 0) > 0).length > 0 && (
+            <div className="lockers-section">
+              <h2 className="section-title">Lockers with Withdrawn Assets</h2>
+              <div className="lockers-grid">
+                {lockers
+                  .filter(locker => (locker.withdrawn_assets || 0) > 0)
+                  .map(locker => (
+                    <div 
+                      key={locker.id} 
+                      className="locker-card"
+                      onClick={() => handleLockerClick(locker.id)}
+                    >
+                      <div className="locker-card-header">
+                        <h2>{locker.name}</h2>
+                        <button
+                          className="delete-button"
+                          onClick={(e) => handleDeleteClick(locker.id, e)}
+                          title="Delete locker"
+                        >
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </button>
+                      </div>
+                      <div className="locker-card-body">
+                        <p className="location-name">{locker.location_name}</p>
+                        <p className="address">{locker.address}</p>
+                        <div className="asset-counts">
+                          <span className="asset-count-text">
+                            Assets: {locker.withdrawn_assets || 0} withdrawn / {locker.total_assets || 0} total
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
               </div>
             </div>
-          ))
-        )}
-      </div>
+          )}
+
+          {lockers.filter(l => (l.withdrawn_assets || 0) === 0).length > 0 && (
+            <div className="lockers-section">
+              <h2 className="section-title">Lockers with All Assets Intact</h2>
+              <div className="lockers-grid">
+                {lockers
+                  .filter(locker => (locker.withdrawn_assets || 0) === 0)
+                  .map(locker => (
+                    <div 
+                      key={locker.id} 
+                      className="locker-card"
+                      onClick={() => handleLockerClick(locker.id)}
+                    >
+                      <div className="locker-card-header">
+                        <h2>{locker.name}</h2>
+                        <button
+                          className="delete-button"
+                          onClick={(e) => handleDeleteClick(locker.id, e)}
+                          title="Delete locker"
+                        >
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </button>
+                      </div>
+                      <div className="locker-card-body">
+                        <p className="location-name">{locker.location_name}</p>
+                        <p className="address">{locker.address}</p>
+                        <div className="asset-counts">
+                          <span className="asset-count-text">
+                            Assets: {locker.withdrawn_assets || 0} withdrawn / {locker.total_assets || 0} total
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       {showCreateModal && (
         <CreateLockerModal
