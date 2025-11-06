@@ -1,0 +1,246 @@
+/**
+ * Locker detail page styles.
+ */
+.locker-detail-page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.locker-detail-header {
+  background-color: white;
+  border-radius: 8px;
+  padding: 32px;
+  margin-bottom: 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.back-button {
+  background-color: #95a5a6;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.back-button:hover {
+  background-color: #7f8c8d;
+}
+
+.locker-info {
+  flex: 1;
+}
+
+.locker-info h1 {
+  font-size: 32px;
+  color: #2c3e50;
+  margin-bottom: 12px;
+}
+
+.locker-info .location-name {
+  font-size: 18px;
+  font-weight: 500;
+  color: #34495e;
+  margin-bottom: 8px;
+}
+
+.locker-info .address {
+  font-size: 16px;
+  color: #7f8c8d;
+  line-height: 1.5;
+}
+
+.edit-locker-button {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.edit-locker-button:hover {
+  background-color: #2980b9;
+}
+
+.assets-section {
+  background-color: white;
+  border-radius: 8px;
+  padding: 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.assets-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.assets-header h2 {
+  font-size: 24px;
+  color: #2c3e50;
+}
+
+.create-asset-button {
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.create-asset-button:hover {
+  background-color: #229954;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #7f8c8d;
+  font-size: 18px;
+}
+
+.assets-table-container {
+  overflow-x: auto;
+}
+
+.assets-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.assets-table thead {
+  background-color: #ecf0f1;
+}
+
+.assets-table th {
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #2c3e50;
+  border-bottom: 2px solid #bdc3c7;
+}
+
+.assets-table td {
+  padding: 16px 12px;
+  border-bottom: 1px solid #ecf0f1;
+}
+
+.assets-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.asset-type-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.asset-type-badge.jewellery {
+  background-color: #fef5e7;
+  color: #d68910;
+}
+
+.asset-type-badge.document {
+  background-color: #ebf5fb;
+  color: #2874a6;
+}
+
+.asset-type-badge.misc {
+  background-color: #e8f8f5;
+  color: #138d75;
+}
+
+.asset-details-cell {
+  max-width: 300px;
+}
+
+.asset-notes {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #7f8c8d;
+  font-style: italic;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.edit-button {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.edit-button:hover {
+  background-color: #2980b9;
+}
+
+.delete-button {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.delete-button:hover {
+  background-color: #c0392b;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  font-size: 18px;
+  color: #7f8c8d;
+}
+
+.error-container {
+  text-align: center;
+  padding: 60px 20px;
+  color: #e74c3c;
+  font-size: 18px;
+}
+
+.error-container button {
+  margin-top: 20px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  font-size: 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.error-container button:hover {
+  background-color: #2980b9;
+}
+
