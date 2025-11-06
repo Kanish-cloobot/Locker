@@ -86,6 +86,16 @@
   padding: 20px;
 }
 
+.file-preview-pdf.clickable-pdf {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.file-preview-pdf.clickable-pdf:hover {
+  background: rgba(231, 76, 60, 0.1);
+  transform: scale(1.05);
+}
+
 .file-preview-pdf svg {
   width: 48px;
   height: 48px;

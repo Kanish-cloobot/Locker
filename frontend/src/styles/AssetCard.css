@@ -46,6 +46,16 @@
   justify-content: center;
 }
 
+.thumbnail-pdf.clickable-pdf {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.thumbnail-pdf.clickable-pdf:hover {
+  transform: scale(1.1);
+  opacity: 0.8;
+}
+
 .thumbnail-pdf svg {
   width: 64px;
   height: 64px;

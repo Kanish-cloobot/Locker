@@ -4,11 +4,14 @@
 import React, { useState, useEffect } from 'react';
 import FileService from '../presenters/fileService';
 import AssetService from '../presenters/assetService';
+import PDFPreviewModal from './PDFPreviewModal';
 import '../styles/AssetCard.css';
 
 function AssetCard({ asset, onEdit, onDelete, onViewHistory }) {
   const [thumbnail, setThumbnail] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [pdfFile, setPdfFile] = useState(null);
+  const [previewFile, setPreviewFile] = useState(null);
 
   useEffect(() => {
     loadThumbnail();
@@ -23,20 +26,30 @@ function AssetCard({ asset, onEdit, onDelete, onViewHistory }) {
       if (imageFile) {
         const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
         setThumbnail(`${API_BASE_URL}/api/files/${imageFile.id}`);
+        setPdfFile(null);
       } else {
         // Check for PDF
-        const pdfFile = files.find(file => file.file_type === 'PDF');
-        if (pdfFile) {
+        const pdf = files.find(file => file.file_type === 'PDF');
+        if (pdf) {
           setThumbnail('PDF');
+          setPdfFile(pdf);
         } else {
           setThumbnail(null);
+          setPdfFile(null);
         }
       }
     } catch (err) {
       console.error('Error loading thumbnail:', err);
       setThumbnail(null);
+      setPdfFile(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePdfClick = () => {
+    if (pdfFile) {
+      setPreviewFile(pdfFile);
     }
   };
 
@@ -56,7 +69,11 @@ function AssetCard({ asset, onEdit, onDelete, onViewHistory }) {
           <div className="thumbnail-loading">Loading...</div>
         ) : thumbnail ? (
           thumbnail === 'PDF' ? (
-            <div className="thumbnail-pdf">
+            <div 
+              className="thumbnail-pdf clickable-pdf"
+              onClick={handlePdfClick}
+              title="Click to preview PDF"
+            >
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -127,6 +144,13 @@ function AssetCard({ asset, onEdit, onDelete, onViewHistory }) {
           </button>
         </div>
       </div>
+
+      {previewFile && (
+        <PDFPreviewModal
+          file={previewFile}
+          onClose={() => setPreviewFile(null)}
+        />
+      )}
     </div>
   );
 }
