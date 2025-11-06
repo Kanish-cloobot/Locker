@@ -5,11 +5,16 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 class DashboardService {
   /**
-   * Get dashboard statistics.
+   * Get dashboard statistics for a specific locker.
+   * @param {number} lockerId - The locker ID (required)
    */
-  static async getDashboardStats() {
+  static async getDashboardStats(lockerId) {
+    if (!lockerId) {
+      throw new Error('Locker ID is required');
+    }
     try {
-      const response = await fetch(`${API_BASE_URL}/api/dashboard`);
+      const url = `${API_BASE_URL}/api/lockers/${lockerId}/dashboard`;
+      const response = await fetch(url);
       if (!response.ok) {
         throw new Error('Failed to fetch dashboard stats');
       }

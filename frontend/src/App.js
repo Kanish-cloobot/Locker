@@ -16,8 +16,8 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/locker/:id" element={<LockerDetailPage />} />
+          <Route path="/locker/:id/dashboard" element={<LockerDashboardPage />} />
           <Route path="/transactions" element={<TransactionLedgerPage />} />
-          <Route path="/dashboard" element={<LockerDashboardPage />} />
         </Routes>
       </div>
     </Router>

@@ -144,18 +144,30 @@ class TransactionModel:
         return transactions
     
     @staticmethod
-    def get_recent(limit=10):
-        """Get recent transactions with asset info."""
+    def get_recent(limit=10, locker_id=None):
+        """Get recent transactions with asset info, optionally filtered by locker_id."""
         conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute('''
-            SELECT t.*, a.name as asset_name, a.asset_type 
-            FROM "Transaction" t
-            JOIN Asset a ON t.asset_id = a.id
-            WHERE t.status = 'active'
-            ORDER BY t.created_at DESC
-            LIMIT ?
-        ''', (limit,))
+        
+        if locker_id:
+            cursor.execute('''
+                SELECT t.*, a.name as asset_name, a.asset_type 
+                FROM "Transaction" t
+                JOIN Asset a ON t.asset_id = a.id
+                WHERE t.status = 'active' AND a.locker_id = ?
+                ORDER BY t.created_at DESC
+                LIMIT ?
+            ''', (locker_id, limit))
+        else:
+            cursor.execute('''
+                SELECT t.*, a.name as asset_name, a.asset_type 
+                FROM "Transaction" t
+                JOIN Asset a ON t.asset_id = a.id
+                WHERE t.status = 'active'
+                ORDER BY t.created_at DESC
+                LIMIT ?
+            ''', (limit,))
+        
         transactions = [dict(row) for row in cursor.fetchall()]
         conn.close()
         return transactions

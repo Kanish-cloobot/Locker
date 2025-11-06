@@ -2,25 +2,37 @@
  * Locker Dashboard page - displays statistics and recent transactions.
  */
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import DashboardService from '../presenters/dashboardService';
+import LockerService from '../presenters/lockerService';
 import '../styles/LockerDashboardPage.css';
 
 function LockerDashboardPage() {
   const navigate = useNavigate();
+  const { id } = useParams();
   const [stats, setStats] = useState(null);
+  const [locker, setLocker] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    loadDashboard();
-  }, []);
+    if (id) {
+      loadDashboard();
+    } else {
+      setError('Locker ID is required');
+      setLoading(false);
+    }
+  }, [id]);
 
   const loadDashboard = async () => {
     try {
       setLoading(true);
-      const data = await DashboardService.getDashboardStats();
-      setStats(data);
+      const [dashboardData, lockerData] = await Promise.all([
+        DashboardService.getDashboardStats(parseInt(id)),
+        LockerService.getLockerById(id)
+      ]);
+      setStats(dashboardData);
+      setLocker(lockerData);
       setError(null);
     } catch (err) {
       setError('Failed to load dashboard. Please try again.');
@@ -55,10 +67,18 @@ function LockerDashboardPage() {
   return (
     <div className="locker-dashboard-page">
       <div className="dashboard-header">
-        <button className="back-button" onClick={() => navigate('/')}>
+        <button className="back-button" onClick={() => navigate(`/locker/${id}`)}>
           ← Back
         </button>
-        <h1>Locker Dashboard</h1>
+        <div className="dashboard-title-section">
+          <h1>Locker Dashboard</h1>
+          {locker && (
+            <div className="locker-info">
+              <h2>{locker.name}</h2>
+              <p className="location-name">{locker.location_name}</p>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="stats-grid">

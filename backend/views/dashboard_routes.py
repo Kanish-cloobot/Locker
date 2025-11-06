@@ -7,11 +7,11 @@ from backend.presenters.dashboard_service import DashboardService
 dashboard_bp = Blueprint('dashboard', __name__)
 
 
-@dashboard_bp.route('/api/dashboard', methods=['GET'])
-def get_dashboard():
-    """Get dashboard statistics."""
+@dashboard_bp.route('/api/lockers/<int:locker_id>/dashboard', methods=['GET'])
+def get_locker_dashboard(locker_id):
+    """Get dashboard statistics for a specific locker."""
     try:
-        stats = DashboardService.get_dashboard_stats()
+        stats = DashboardService.get_dashboard_stats(locker_id=locker_id)
         return jsonify(stats), 200
     except Exception as e:
         import traceback

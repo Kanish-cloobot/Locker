@@ -149,12 +149,20 @@ function LockerDetailPage() {
           <p className="location-name">{locker.location_name}</p>
           <p className="address">{locker.address}</p>
         </div>
-        <button 
-          className="edit-locker-button"
-          onClick={() => setShowEditLockerModal(true)}
-        >
-          Edit Locker
-        </button>
+        <div className="locker-detail-actions">
+          <button 
+            className="dashboard-button"
+            onClick={() => navigate(`/locker/${id}/dashboard`)}
+          >
+            Dashboard
+          </button>
+          <button 
+            className="edit-locker-button"
+            onClick={() => setShowEditLockerModal(true)}
+          >
+            Edit Locker
+          </button>
+        </div>
       </div>
 
       <div className="assets-section">

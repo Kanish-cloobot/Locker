@@ -9,61 +9,118 @@ class DashboardService:
     """Service class for dashboard statistics."""
     
     @staticmethod
-    def get_dashboard_stats():
-        """Get dashboard statistics."""
+    def get_dashboard_stats(locker_id=None):
+        """Get dashboard statistics for a specific locker or all lockers if locker_id is None."""
         conn = get_connection()
         cursor = conn.cursor()
         
         try:
-            # Total assets deposited (including withdrawn)
-            cursor.execute('''
-                SELECT COUNT(DISTINCT asset_id) as total_deposited
-                FROM "Transaction"
-                WHERE transaction_type = 'DEPOSIT' AND status = 'active'
-            ''')
-            result = cursor.fetchone()
-            total_deposited = result['total_deposited'] if result and result['total_deposited'] else 0
-            
-            # Assets currently in locker - assets that have been deposited 
-            # and the last transaction is not WITHDRAW or PERMANENT_REMOVE
-            cursor.execute('''
-                SELECT COUNT(DISTINCT a.id) as current_in_locker
-                FROM Asset a
-                WHERE a.status = 'active'
-                AND EXISTS (
-                    SELECT 1 FROM "Transaction" t1
-                    WHERE t1.asset_id = a.id 
-                    AND t1.transaction_type = 'DEPOSIT' 
-                    AND t1.status = 'active'
-                )
-                AND NOT EXISTS (
-                    SELECT 1 FROM "Transaction" t2
-                    WHERE t2.asset_id = a.id
-                    AND t2.transaction_type IN ('WITHDRAW', 'PERMANENT_REMOVE')
-                    AND t2.status = 'active'
-                    AND t2.created_at > (
-                        SELECT COALESCE(MAX(t3.created_at), '1900-01-01')
-                        FROM "Transaction" t3
-                        WHERE t3.asset_id = a.id
-                        AND t3.transaction_type = 'DEPOSIT'
-                        AND t3.status = 'active'
+            if locker_id:
+                # Total assets deposited (including withdrawn) for this locker
+                cursor.execute('''
+                    SELECT COUNT(DISTINCT t.asset_id) as total_deposited
+                    FROM "Transaction" t
+                    JOIN Asset a ON t.asset_id = a.id
+                    WHERE t.transaction_type = 'DEPOSIT' 
+                    AND t.status = 'active'
+                    AND a.locker_id = ?
+                ''', (locker_id,))
+                result = cursor.fetchone()
+                total_deposited = result['total_deposited'] if result and result['total_deposited'] else 0
+                
+                # Assets currently in locker - assets that have been deposited 
+                # and the last transaction is not WITHDRAW or PERMANENT_REMOVE
+                cursor.execute('''
+                    SELECT COUNT(DISTINCT a.id) as current_in_locker
+                    FROM Asset a
+                    WHERE a.status = 'active' AND a.locker_id = ?
+                    AND EXISTS (
+                        SELECT 1 FROM "Transaction" t1
+                        WHERE t1.asset_id = a.id 
+                        AND t1.transaction_type = 'DEPOSIT' 
+                        AND t1.status = 'active'
                     )
-                )
-            ''')
-            result = cursor.fetchone()
-            current_in_locker = result['current_in_locker'] if result and result['current_in_locker'] else 0
-            
-            # Assets withdrawn as on date
-            cursor.execute('''
-                SELECT COUNT(DISTINCT asset_id) as withdrawn
-                FROM "Transaction"
-                WHERE transaction_type = 'WITHDRAW' AND status = 'active'
-            ''')
-            result = cursor.fetchone()
-            withdrawn = result['withdrawn'] if result and result['withdrawn'] else 0
-            
-            # Last 10 transactions
-            recent_transactions = TransactionModel.get_recent(limit=10)
+                    AND NOT EXISTS (
+                        SELECT 1 FROM "Transaction" t2
+                        WHERE t2.asset_id = a.id
+                        AND t2.transaction_type IN ('WITHDRAW', 'PERMANENT_REMOVE')
+                        AND t2.status = 'active'
+                        AND t2.created_at > (
+                            SELECT COALESCE(MAX(t3.created_at), '1900-01-01')
+                            FROM "Transaction" t3
+                            WHERE t3.asset_id = a.id
+                            AND t3.transaction_type = 'DEPOSIT'
+                            AND t3.status = 'active'
+                        )
+                    )
+                ''', (locker_id,))
+                result = cursor.fetchone()
+                current_in_locker = result['current_in_locker'] if result and result['current_in_locker'] else 0
+                
+                # Assets withdrawn as on date for this locker
+                cursor.execute('''
+                    SELECT COUNT(DISTINCT t.asset_id) as withdrawn
+                    FROM "Transaction" t
+                    JOIN Asset a ON t.asset_id = a.id
+                    WHERE t.transaction_type = 'WITHDRAW' 
+                    AND t.status = 'active'
+                    AND a.locker_id = ?
+                ''', (locker_id,))
+                result = cursor.fetchone()
+                withdrawn = result['withdrawn'] if result and result['withdrawn'] else 0
+                
+                # Last 10 transactions for this locker
+                recent_transactions = TransactionModel.get_recent(limit=10, locker_id=locker_id)
+            else:
+                # Total assets deposited (including withdrawn) - global
+                cursor.execute('''
+                    SELECT COUNT(DISTINCT asset_id) as total_deposited
+                    FROM "Transaction"
+                    WHERE transaction_type = 'DEPOSIT' AND status = 'active'
+                ''')
+                result = cursor.fetchone()
+                total_deposited = result['total_deposited'] if result and result['total_deposited'] else 0
+                
+                # Assets currently in locker - assets that have been deposited 
+                # and the last transaction is not WITHDRAW or PERMANENT_REMOVE
+                cursor.execute('''
+                    SELECT COUNT(DISTINCT a.id) as current_in_locker
+                    FROM Asset a
+                    WHERE a.status = 'active'
+                    AND EXISTS (
+                        SELECT 1 FROM "Transaction" t1
+                        WHERE t1.asset_id = a.id 
+                        AND t1.transaction_type = 'DEPOSIT' 
+                        AND t1.status = 'active'
+                    )
+                    AND NOT EXISTS (
+                        SELECT 1 FROM "Transaction" t2
+                        WHERE t2.asset_id = a.id
+                        AND t2.transaction_type IN ('WITHDRAW', 'PERMANENT_REMOVE')
+                        AND t2.status = 'active'
+                        AND t2.created_at > (
+                            SELECT COALESCE(MAX(t3.created_at), '1900-01-01')
+                            FROM "Transaction" t3
+                            WHERE t3.asset_id = a.id
+                            AND t3.transaction_type = 'DEPOSIT'
+                            AND t3.status = 'active'
+                        )
+                    )
+                ''')
+                result = cursor.fetchone()
+                current_in_locker = result['current_in_locker'] if result and result['current_in_locker'] else 0
+                
+                # Assets withdrawn as on date
+                cursor.execute('''
+                    SELECT COUNT(DISTINCT asset_id) as withdrawn
+                    FROM "Transaction"
+                    WHERE transaction_type = 'WITHDRAW' AND status = 'active'
+                ''')
+                result = cursor.fetchone()
+                withdrawn = result['withdrawn'] if result and result['withdrawn'] else 0
+                
+                # Last 10 transactions
+                recent_transactions = TransactionModel.get_recent(limit=10)
             
             return {
                 'total_deposited': total_deposited,

@@ -11,7 +11,35 @@
   margin-bottom: 30px;
 }
 
+.dashboard-title-section {
+  flex: 1;
+}
+
 .dashboard-header h1 {
+  margin: 0 0 12px 0;
+  font-size: 32px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dashboard-header .locker-info {
+  margin-top: 8px;
+}
+
+.dashboard-header .locker-info h2 {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.dashboard-header .locker-info .location-name {
+  font-size: 16px;
+  font-weight: 500;
+  color: #7f8c8d;
   margin: 0;
 }
 

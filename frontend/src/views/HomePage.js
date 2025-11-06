@@ -75,6 +75,11 @@ function HomePage() {
     navigate(`/locker/${lockerId}`);
   };
 
+  const handleDashboardClick = (lockerId, event) => {
+    event.stopPropagation();
+    navigate(`/locker/${lockerId}/dashboard`);
+  };
+
   if (loading) {
     return <div className="loading-container">Loading lockers...</div>;
   }
@@ -84,12 +89,6 @@ function HomePage() {
       <div className="home-header">
         <h1>Family Locker Organizer</h1>
         <div className="header-actions">
-          <button 
-            className="nav-button"
-            onClick={() => navigate('/dashboard')}
-          >
-            Dashboard
-          </button>
           <button 
             className="nav-button"
             onClick={() => navigate('/transactions')}
@@ -127,15 +126,24 @@ function HomePage() {
                     >
                       <div className="locker-card-header">
                         <h2>{locker.name}</h2>
-                        <button
-                          className="delete-button"
-                          onClick={(e) => handleDeleteClick(locker.id, e)}
-                          title="Delete locker"
-                        >
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </button>
+                        <div className="locker-card-actions">
+                          <button
+                            className="dashboard-button"
+                            onClick={(e) => handleDashboardClick(locker.id, e)}
+                            title="View Dashboard"
+                          >
+                            Dashboard
+                          </button>
+                          <button
+                            className="delete-button"
+                            onClick={(e) => handleDeleteClick(locker.id, e)}
+                            title="Delete locker"
+                          >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                       <div className="locker-card-body">
                         <p className="location-name">{locker.location_name}</p>
@@ -166,15 +174,24 @@ function HomePage() {
                     >
                       <div className="locker-card-header">
                         <h2>{locker.name}</h2>
-                        <button
-                          className="delete-button"
-                          onClick={(e) => handleDeleteClick(locker.id, e)}
-                          title="Delete locker"
-                        >
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </button>
+                        <div className="locker-card-actions">
+                          <button
+                            className="dashboard-button"
+                            onClick={(e) => handleDashboardClick(locker.id, e)}
+                            title="View Dashboard"
+                          >
+                            Dashboard
+                          </button>
+                          <button
+                            className="delete-button"
+                            onClick={(e) => handleDeleteClick(locker.id, e)}
+                            title="Delete locker"
+                          >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                       <div className="locker-card-body">
                         <p className="location-name">{locker.location_name}</p>
