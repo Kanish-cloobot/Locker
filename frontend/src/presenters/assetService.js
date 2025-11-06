@@ -89,6 +89,38 @@ class AssetService {
       throw error;
     }
   }
+
+  /**
+   * Get edit history for an asset.
+   */
+  static async getEditHistory(assetId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/assets/${assetId}/edit-history`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch edit history');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching edit history:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get files for an asset.
+   */
+  static async getAssetFiles(assetId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/assets/${assetId}/files`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch asset files');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching asset files:', error);
+      throw error;
+    }
+  }
 }
 
 export default AssetService;

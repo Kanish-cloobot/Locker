@@ -2,6 +2,8 @@
  * Modal component for creating/editing assets.
  */
 import React, { useState, useEffect } from 'react';
+import FileUpload from '../components/FileUpload';
+import AssetService from '../presenters/assetService';
 import '../styles/Modal.css';
 
 function AssetModal({ onClose, onSave, asset }) {
@@ -18,6 +20,8 @@ function AssetModal({ onClose, onSave, asset }) {
     document_type: ''
   });
   const [errors, setErrors] = useState({});
+  const [files, setFiles] = useState([]);
+  const [pendingFiles, setPendingFiles] = useState([]);
 
   useEffect(() => {
     if (asset) {
@@ -32,8 +36,25 @@ function AssetModal({ onClose, onSave, asset }) {
         gifting_details: asset.jewellery_details?.gifting_details || '',
         document_type: asset.document_details?.document_type || ''
       });
+      loadAssetFiles(asset.id);
+    } else {
+      setFiles([]);
     }
   }, [asset]);
+
+  const loadAssetFiles = async (assetId) => {
+    try {
+      const assetFiles = await AssetService.getAssetFiles(assetId);
+      // Add URL to each file
+      const filesWithUrl = assetFiles.map(file => ({
+        ...file,
+        url: `http://localhost:5000/api/files/${file.id}`
+      }));
+      setFiles(filesWithUrl);
+    } catch (err) {
+      console.error('Error loading asset files:', err);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -62,7 +83,7 @@ function AssetModal({ onClose, onSave, asset }) {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validate()) {
       const submitData = {
@@ -81,8 +102,24 @@ function AssetModal({ onClose, onSave, asset }) {
         submitData.document_type = formData.document_type || null;
       }
 
+      // For new assets, pass pending files to be uploaded after creation
+      if (!isEditing && pendingFiles.length > 0) {
+        submitData.pendingFiles = pendingFiles;
+      }
+
       onSave(submitData);
     }
+  };
+
+  const handlePendingFileSelect = (e) => {
+    const selectedFiles = Array.from(e.target.files);
+    if (selectedFiles.length === 0) return;
+    setPendingFiles([...pendingFiles, ...selectedFiles]);
+    e.target.value = ''; // Reset input
+  };
+
+  const handleRemovePendingFile = (index) => {
+    setPendingFiles(pendingFiles.filter((_, i) => i !== index));
   };
 
   return (
@@ -210,6 +247,69 @@ function AssetModal({ onClose, onSave, asset }) {
               rows="3"
               placeholder="Additional notes about this asset"
             />
+          </div>
+
+          <div className="form-group">
+            <label>Files (Images/PDFs)</label>
+            {isEditing && asset ? (
+              <FileUpload
+                assetId={asset.id}
+                files={files}
+                onFilesChange={setFiles}
+              />
+            ) : (
+              <div className="file-upload-container">
+                <div className="file-upload-header">
+                  <label htmlFor="pending-file-upload-input" className="file-upload-button">
+                    + Select Files (Images/PDF)
+                  </label>
+                  <input
+                    id="pending-file-upload-input"
+                    type="file"
+                    multiple
+                    accept="image/*,.pdf"
+                    onChange={handlePendingFileSelect}
+                    style={{ display: 'none' }}
+                  />
+                </div>
+                {pendingFiles.length > 0 && (
+                  <div className="file-preview-grid">
+                    {pendingFiles.map((file, index) => (
+                      <div key={index} className="file-preview-item">
+                        <div className="file-preview-content">
+                          {file.type.startsWith('image/') ? (
+                            <img
+                              src={URL.createObjectURL(file)}
+                              alt={file.name}
+                              className="file-preview-image"
+                            />
+                          ) : (
+                            <div className="file-preview-pdf">
+                              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                              <span>{file.name}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="file-preview-info">
+                          <span className="file-name">{file.name}</span>
+                          <button
+                            className="file-delete-button"
+                            onClick={() => handleRemovePendingFile(index)}
+                            title="Remove file"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <p className="file-upload-hint">Files will be uploaded after the asset is created.</p>
+              </div>
+            )}
           </div>
 
           <div className="modal-actions">

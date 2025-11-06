@@ -54,3 +54,24 @@ def delete_asset(asset_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+@asset_bp.route('/api/assets/<int:asset_id>/edit-history', methods=['GET'])
+def get_asset_edit_history(asset_id):
+    """Get edit history for an asset."""
+    try:
+        history = AssetService.get_asset_edit_history(asset_id)
+        return jsonify(history), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@asset_bp.route('/api/assets/<int:asset_id>/files', methods=['GET'])
+def get_asset_files(asset_id):
+    """Get all files for an asset."""
+    try:
+        asset = AssetService.get_asset_with_files(asset_id)
+        if not asset:
+            return jsonify({'error': 'Asset not found'}), 404
+        return jsonify(asset.get('files', [])), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

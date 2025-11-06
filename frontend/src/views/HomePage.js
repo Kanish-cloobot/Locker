@@ -10,6 +10,7 @@ import '../styles/HomePage.css';
 
 function HomePage() {
   const [lockers, setLockers] = useState([]);
+  const [lockersWithStats, setLockersWithStats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -24,16 +25,35 @@ function HomePage() {
   const loadLockers = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await LockerService.getAllLockers();
       setLockers(data);
-      setError(null);
+      
+      // Fetch stats for each locker
+      const lockersWithStatsData = await Promise.all(
+        data.map(async (locker) => {
+          try {
+            const stats = await LockerService.getLockerStats(locker.id);
+            return { ...locker, stats };
+          } catch (err) {
+            console.error(`Error loading stats for locker ${locker.id}:`, err);
+            return { ...locker, stats: { total_assets: 0, withdrawn_count: 0 } };
+          }
+        })
+      );
+      setLockersWithStats(lockersWithStatsData);
     } catch (err) {
-      setError('Failed to load lockers. Please try again.');
-      console.error(err);
+      const errorMessage = err.message || 'Failed to load lockers. Please try again.';
+      setError(errorMessage);
+      console.error('Error loading lockers:', err);
     } finally {
       setLoading(false);
     }
   };
+  
+  // Organize lockers into two sections
+  const lockersWithWithdrawn = lockersWithStats.filter(locker => locker.stats && locker.stats.withdrawn_count > 0);
+  const lockersIntact = lockersWithStats.filter(locker => !locker.stats || locker.stats.withdrawn_count === 0);
 
   const handleCreateLocker = async (lockerData) => {
     try {
@@ -91,40 +111,100 @@ function HomePage() {
         </button>
       </div>
 
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <div className="error-container">
+          <div className="error-message">{error}</div>
+          <button 
+            className="retry-button"
+            onClick={loadLockers}
+            disabled={loading}
+          >
+            {loading ? 'Retrying...' : 'Retry'}
+          </button>
+        </div>
+      )}
 
-      <div className="lockers-grid">
-        {lockers.length === 0 ? (
-          <div className="empty-state">
-            <p>No lockers found. Create your first locker to get started!</p>
-          </div>
-        ) : (
-          lockers.map(locker => (
-            <div 
-              key={locker.id} 
-              className="locker-card"
-              onClick={() => handleLockerClick(locker.id)}
-            >
-              <div className="locker-card-header">
-                <h2>{locker.name}</h2>
-                <button
-                  className="delete-button"
-                  onClick={(e) => handleDeleteClick(locker.id, e)}
-                  title="Delete locker"
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-              </div>
-              <div className="locker-card-body">
-                <p className="location-name">{locker.location_name}</p>
-                <p className="address">{locker.address}</p>
+      {lockers.length === 0 ? (
+        <div className="empty-state">
+          <p>No lockers found. Create your first locker to get started!</p>
+        </div>
+      ) : (
+        <>
+          {lockersWithWithdrawn.length > 0 && (
+            <div className="lockers-section">
+              <h2 className="section-title">Lockers with withdrawn assets</h2>
+              <div className="lockers-grid">
+                {lockersWithWithdrawn.map(locker => (
+                  <div 
+                    key={locker.id} 
+                    className="locker-card"
+                    onClick={() => handleLockerClick(locker.id)}
+                  >
+                    <div className="locker-card-header">
+                      <h2>{locker.name}</h2>
+                      <button
+                        className="delete-button"
+                        onClick={(e) => handleDeleteClick(locker.id, e)}
+                        title="Delete locker"
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                    </div>
+                    <div className="locker-card-body">
+                      <p className="location-name">{locker.location_name}</p>
+                      <p className="address">{locker.address}</p>
+                      {locker.stats && (
+                        <p className="asset-count">
+                          {locker.stats.withdrawn_count} withdrawn / {locker.stats.total_assets} total
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          ))
-        )}
-      </div>
+          )}
+
+          {lockersIntact.length > 0 && (
+            <div className="lockers-section">
+              <h2 className="section-title">Lockers with all assets intact</h2>
+              <div className="lockers-grid">
+                {lockersIntact.map(locker => (
+                  <div 
+                    key={locker.id} 
+                    className="locker-card"
+                    onClick={() => handleLockerClick(locker.id)}
+                  >
+                    <div className="locker-card-header">
+                      <h2>{locker.name}</h2>
+                      <button
+                        className="delete-button"
+                        onClick={(e) => handleDeleteClick(locker.id, e)}
+                        title="Delete locker"
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                    </div>
+                    <div className="locker-card-body">
+                      <p className="location-name">{locker.location_name}</p>
+                      <p className="address">{locker.address}</p>
+                      {locker.stats && (
+                        <p className="asset-count">
+                          {locker.stats.withdrawn_count} withdrawn / {locker.stats.total_assets} total
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       {showCreateModal && (
         <CreateLockerModal

@@ -14,7 +14,9 @@ def get_all_lockers():
         lockers = LockerService.get_all_lockers()
         return jsonify(lockers), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        error_message = str(e)
+        print(f"Error in get_all_lockers: {error_message}")  # Log for debugging
+        return jsonify({'error': error_message}), 500
 
 
 @locker_bp.route('/api/lockers/<int:locker_id>', methods=['GET'])
@@ -66,3 +68,12 @@ def delete_locker(locker_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+@locker_bp.route('/api/lockers/<int:locker_id>/stats', methods=['GET'])
+def get_locker_stats(locker_id):
+    """Get asset statistics for a locker."""
+    try:
+        stats = LockerService.get_locker_stats(locker_id)
+        return jsonify(stats), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

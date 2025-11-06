@@ -10,12 +10,18 @@ class LockerModel:
     @staticmethod
     def get_all():
         """Get all active lockers."""
-        conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM Locker WHERE status = 'active' ORDER BY created_at DESC")
-        lockers = [dict(row) for row in cursor.fetchall()]
-        conn.close()
-        return lockers
+        conn = None
+        try:
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM Locker WHERE status = 'active' ORDER BY created_at DESC")
+            lockers = [dict(row) for row in cursor.fetchall()]
+            conn.close()
+            return lockers
+        except Exception as e:
+            if conn:
+                conn.close()
+            raise Exception(f"Database error while fetching lockers: {str(e)}")
     
     @staticmethod
     def get_by_id(locker_id):

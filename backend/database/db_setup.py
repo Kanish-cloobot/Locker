@@ -111,6 +111,142 @@ def init_database():
     except sqlite3.OperationalError:
         pass  # Column already exists
     
+    # Add current_status column to Asset table (migration)
+    try:
+        cursor.execute("ALTER TABLE Asset ADD COLUMN current_status TEXT DEFAULT 'IN_LOCKER'")
+        cursor.execute("UPDATE Asset SET current_status = 'IN_LOCKER' WHERE current_status IS NULL")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+    
+    # Create Transaction table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS "Transaction" (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            asset_id INTEGER NOT NULL,
+            locker_id INTEGER NOT NULL,
+            transaction_type TEXT NOT NULL CHECK(transaction_type IN ('DEPOSIT', 'WITHDRAW', 'PERMANENTLY_REMOVE')),
+            reason TEXT,
+            responsible_person TEXT,
+            transaction_date TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'deleted')),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (asset_id) REFERENCES Asset(id),
+            FOREIGN KEY (locker_id) REFERENCES Locker(id)
+        )
+    ''')
+    
+    # Add missing columns to Transaction table if they don't exist (migrations)
+    # Add locker_id column
+    try:
+        cursor.execute("ALTER TABLE \"Transaction\" ADD COLUMN locker_id INTEGER")
+        # Populate locker_id from Asset table for existing transactions
+        cursor.execute('''
+            UPDATE "Transaction" 
+            SET locker_id = (
+                SELECT locker_id 
+                FROM Asset 
+                WHERE Asset.id = "Transaction".asset_id
+            )
+            WHERE locker_id IS NULL
+        ''')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+    
+    # Add transaction_date column
+    try:
+        cursor.execute("ALTER TABLE \"Transaction\" ADD COLUMN transaction_date TEXT")
+        # Populate transaction_date from created_at for existing transactions, or use current timestamp
+        timestamp = get_timestamp()
+        cursor.execute('''
+            UPDATE "Transaction" 
+            SET transaction_date = COALESCE(created_at, ?)
+            WHERE transaction_date IS NULL
+        ''', (timestamp,))
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+    
+    # Add status column
+    try:
+        cursor.execute("ALTER TABLE \"Transaction\" ADD COLUMN status TEXT DEFAULT 'active'")
+        cursor.execute("UPDATE \"Transaction\" SET status = 'active' WHERE status IS NULL")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+    
+    # Add created_at column
+    try:
+        cursor.execute("ALTER TABLE \"Transaction\" ADD COLUMN created_at TEXT")
+        timestamp = get_timestamp()
+        cursor.execute("UPDATE \"Transaction\" SET created_at = ? WHERE created_at IS NULL", (timestamp,))
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+    
+    # Add updated_at column
+    try:
+        cursor.execute("ALTER TABLE \"Transaction\" ADD COLUMN updated_at TEXT")
+        timestamp = get_timestamp()
+        cursor.execute("UPDATE \"Transaction\" SET updated_at = ? WHERE updated_at IS NULL", (timestamp,))
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+    
+    # Add reason column (if missing)
+    try:
+        cursor.execute("ALTER TABLE \"Transaction\" ADD COLUMN reason TEXT")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+    
+    # Add responsible_person column (if missing)
+    try:
+        cursor.execute("ALTER TABLE \"Transaction\" ADD COLUMN responsible_person TEXT")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+    
+    # Create AssetFile table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS AssetFile (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            asset_id INTEGER NOT NULL,
+            file_name TEXT NOT NULL,
+            file_path TEXT NOT NULL,
+            file_type TEXT NOT NULL CHECK(file_type IN ('IMAGE', 'PDF')),
+            file_size INTEGER,
+            status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'deleted')),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (asset_id) REFERENCES Asset(id)
+        )
+    ''')
+    
+    # Add file_size column to AssetFile table if it doesn't exist (migration)
+    try:
+        cursor.execute("ALTER TABLE AssetFile ADD COLUMN file_size INTEGER")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+    
+    # Add updated_at column to AssetFile table if it doesn't exist (migration)
+    try:
+        cursor.execute("ALTER TABLE AssetFile ADD COLUMN updated_at TEXT")
+        timestamp = get_timestamp()
+        cursor.execute("UPDATE AssetFile SET updated_at = ? WHERE updated_at IS NULL", (timestamp,))
+        # Set NOT NULL constraint by recreating the table (SQLite doesn't support ALTER COLUMN)
+        # But we'll handle this in the model instead
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+    
+    # Create AssetEditHistory table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS AssetEditHistory (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            asset_id INTEGER NOT NULL,
+            edited_fields TEXT NOT NULL,
+            old_values TEXT NOT NULL,
+            new_values TEXT NOT NULL,
+            edited_at TEXT NOT NULL,
+            edited_by TEXT DEFAULT 'System',
+            FOREIGN KEY (asset_id) REFERENCES Asset(id)
+        )
+    ''')
+    
     conn.commit()
     conn.close()
     print("Database initialized successfully!")

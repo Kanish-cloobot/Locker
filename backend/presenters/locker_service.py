@@ -52,4 +52,35 @@ class LockerService:
             raise ValueError("Locker not found")
         
         return LockerModel.delete(locker_id)
+    
+    @staticmethod
+    def get_locker_stats(locker_id):
+        """Get asset statistics for a locker."""
+        from backend.database.db_setup import get_connection
+        
+        conn = get_connection()
+        cursor = conn.cursor()
+        
+        # Total assets (including withdrawn)
+        cursor.execute('''
+            SELECT COUNT(*) as count
+            FROM Asset
+            WHERE locker_id = ? AND status = 'active'
+        ''', (locker_id,))
+        total_assets = cursor.fetchone()['count']
+        
+        # Withdrawn assets count
+        cursor.execute('''
+            SELECT COUNT(*) as count
+            FROM Asset
+            WHERE locker_id = ? AND current_status = 'WITHDRAWN' AND status = 'active'
+        ''', (locker_id,))
+        withdrawn_count = cursor.fetchone()['count']
+        
+        conn.close()
+        
+        return {
+            'total_assets': total_assets,
+            'withdrawn_count': withdrawn_count
+        }
 

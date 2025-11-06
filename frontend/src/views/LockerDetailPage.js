@@ -5,9 +5,12 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import LockerService from '../presenters/lockerService';
 import AssetService from '../presenters/assetService';
+import FileService from '../presenters/fileService';
 import AssetModal from './AssetModal';
 import EditLockerModal from './EditLockerModal';
 import ConfirmationModal from './ConfirmationModal';
+import AssetCard from '../components/AssetCard';
+import AssetEditHistoryModal from './AssetEditHistoryModal';
 import '../styles/LockerDetailPage.css';
 
 function LockerDetailPage() {
@@ -22,6 +25,8 @@ function LockerDetailPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [assetToDelete, setAssetToDelete] = useState(null);
   const [editingAsset, setEditingAsset] = useState(null);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [assetForHistory, setAssetForHistory] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -47,7 +52,27 @@ function LockerDetailPage() {
 
   const handleCreateAsset = async (assetData) => {
     try {
-      await AssetService.createAsset(id, assetData);
+      // Extract pending files from assetData
+      const pendingFiles = assetData.pendingFiles || [];
+      delete assetData.pendingFiles;
+      
+      // Create the asset first
+      const newAsset = await AssetService.createAsset(id, assetData);
+      
+      // Upload pending files if any
+      if (pendingFiles.length > 0 && newAsset.id) {
+        try {
+          const uploadPromises = pendingFiles.map(file => 
+            FileService.uploadFile(newAsset.id, file)
+          );
+          await Promise.all(uploadPromises);
+        } catch (uploadErr) {
+          console.error('Error uploading files:', uploadErr);
+          // Don't fail the whole operation if file upload fails
+          alert('Asset created successfully, but some files failed to upload: ' + uploadErr.message);
+        }
+      }
+      
       setShowAssetModal(false);
       loadData();
     } catch (err) {
@@ -135,12 +160,26 @@ function LockerDetailPage() {
           <p className="location-name">{locker.location_name}</p>
           <p className="address">{locker.address}</p>
         </div>
-        <button 
-          className="edit-locker-button"
-          onClick={() => setShowEditLockerModal(true)}
-        >
-          Edit Locker
-        </button>
+        <div className="header-actions">
+          <button 
+            className="dashboard-button"
+            onClick={() => navigate(`/locker/${id}/dashboard`)}
+          >
+            View Dashboard
+          </button>
+          <button 
+            className="transactions-button"
+            onClick={() => navigate(`/locker/${id}/transactions`)}
+          >
+            View Transaction Ledger
+          </button>
+          <button 
+            className="edit-locker-button"
+            onClick={() => setShowEditLockerModal(true)}
+          >
+            Edit Locker
+          </button>
+        </div>
       </div>
 
       <div className="assets-section">
@@ -159,71 +198,19 @@ function LockerDetailPage() {
             <p>No assets in this locker. Add your first asset!</p>
           </div>
         ) : (
-          <div className="assets-table-container">
-            <table className="assets-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Type</th>
-                  <th>Worth</th>
-                  <th>Creation Date</th>
-                  <th>Details</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {assets.map(asset => (
-                  <tr key={asset.id}>
-                    <td>{asset.name}</td>
-                    <td>
-                      <span className={`asset-type-badge ${asset.asset_type.toLowerCase()}`}>
-                        {asset.asset_type}
-                      </span>
-                    </td>
-                    <td>
-                      {asset.worth_on_creation 
-                        ? `$${parseFloat(asset.worth_on_creation).toFixed(2)}` 
-                        : '-'}
-                    </td>
-                    <td>{asset.creation_date || '-'}</td>
-                    <td className="asset-details-cell">
-                      {asset.asset_type === 'JEWELLERY' && asset.jewellery_details && (
-                        <div>
-                          <strong>Material:</strong> {asset.jewellery_details.material_type || 'N/A'}
-                          {asset.jewellery_details.material_grade && (
-                            <span> ({asset.jewellery_details.material_grade})</span>
-                          )}
-                        </div>
-                      )}
-                      {asset.asset_type === 'DOCUMENT' && asset.document_details && (
-                        <div>
-                          <strong>Type:</strong> {asset.document_details.document_type || 'N/A'}
-                        </div>
-                      )}
-                      {asset.details && (
-                        <div className="asset-notes">{asset.details}</div>
-                      )}
-                    </td>
-                    <td>
-                      <div className="action-buttons">
-                        <button 
-                          className="edit-button"
-                          onClick={() => handleEditAsset(asset)}
-                        >
-                          Edit
-                        </button>
-                        <button 
-                          className="delete-button"
-                          onClick={() => handleDeleteAsset(asset.id)}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="assets-grid">
+            {assets.map(asset => (
+              <AssetCard
+                key={asset.id}
+                asset={asset}
+                onEdit={handleEditAsset}
+                onDelete={handleDeleteAsset}
+                onViewHistory={(asset) => {
+                  setAssetForHistory(asset);
+                  setShowHistoryModal(true);
+                }}
+              />
+            ))}
           </div>
         )}
       </div>
@@ -255,6 +242,16 @@ function LockerDetailPage() {
         confirmText="Delete"
         cancelText="Cancel"
       />
+
+      {showHistoryModal && assetForHistory && (
+        <AssetEditHistoryModal
+          asset={assetForHistory}
+          onClose={() => {
+            setShowHistoryModal(false);
+            setAssetForHistory(null);
+          }}
+        />
+      )}
     </div>
   );
 }

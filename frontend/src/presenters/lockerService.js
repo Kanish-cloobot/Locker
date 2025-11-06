@@ -13,12 +13,18 @@ class LockerService {
     try {
       const response = await fetch(`${API_BASE_URL}/api/lockers`);
       if (!response.ok) {
-        throw new Error('Failed to fetch lockers');
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `Server returned ${response.status}: ${response.statusText}`;
+        throw new Error(errorMessage);
       }
       const data = await response.json();
       return data.map(locker => new Locker(locker));
     } catch (error) {
       console.error('Error fetching lockers:', error);
+      // Provide more specific error messages
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error('Unable to connect to server. Please ensure the backend server is running on http://localhost:5000');
+      }
       throw error;
     }
   }
@@ -103,6 +109,22 @@ class LockerService {
       return true;
     } catch (error) {
       console.error('Error deleting locker:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get locker statistics (asset counts).
+   */
+  static async getLockerStats(lockerId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/lockers/${lockerId}/stats`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch locker stats');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching locker stats:', error);
       throw error;
     }
   }
