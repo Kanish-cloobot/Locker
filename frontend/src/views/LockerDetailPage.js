@@ -7,6 +7,7 @@ import LockerService from '../presenters/lockerService';
 import AssetService from '../presenters/assetService';
 import AssetModal from './AssetModal';
 import EditLockerModal from './EditLockerModal';
+import ConfirmationModal from './ConfirmationModal';
 import '../styles/LockerDetailPage.css';
 
 function LockerDetailPage() {
@@ -18,6 +19,8 @@ function LockerDetailPage() {
   const [error, setError] = useState(null);
   const [showAssetModal, setShowAssetModal] = useState(false);
   const [showEditLockerModal, setShowEditLockerModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [assetToDelete, setAssetToDelete] = useState(null);
   const [editingAsset, setEditingAsset] = useState(null);
 
   useEffect(() => {
@@ -63,15 +66,29 @@ function LockerDetailPage() {
     }
   };
 
-  const handleDeleteAsset = async (assetId) => {
-    if (window.confirm('Are you sure you want to delete this asset?')) {
+  const handleDeleteAsset = (assetId) => {
+    setAssetToDelete(assetId);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (assetToDelete) {
       try {
-        await AssetService.deleteAsset(assetId);
+        await AssetService.deleteAsset(assetToDelete);
+        setShowDeleteModal(false);
+        setAssetToDelete(null);
         loadData();
       } catch (err) {
         alert('Failed to delete asset: ' + err.message);
+        setShowDeleteModal(false);
+        setAssetToDelete(null);
       }
     }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setAssetToDelete(null);
   };
 
   const handleEditAsset = (asset) => {
@@ -228,6 +245,16 @@ function LockerDetailPage() {
           onSave={handleUpdateLocker}
         />
       )}
+
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        title="Delete Asset"
+        message="Are you sure you want to delete this asset? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </div>
   );
 }

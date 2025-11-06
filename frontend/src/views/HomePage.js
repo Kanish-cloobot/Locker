@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LockerService from '../presenters/lockerService';
 import CreateLockerModal from './CreateLockerModal';
+import ConfirmationModal from './ConfirmationModal';
 import '../styles/HomePage.css';
 
 function HomePage() {
@@ -12,6 +13,8 @@ function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [lockerToDelete, setLockerToDelete] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -42,16 +45,30 @@ function HomePage() {
     }
   };
 
-  const handleDeleteLocker = async (lockerId, event) => {
+  const handleDeleteClick = (lockerId, event) => {
     event.stopPropagation();
-    if (window.confirm('Are you sure you want to delete this locker? All associated assets will also be deleted.')) {
+    setLockerToDelete(lockerId);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (lockerToDelete) {
       try {
-        await LockerService.deleteLocker(lockerId);
+        await LockerService.deleteLocker(lockerToDelete);
+        setShowDeleteModal(false);
+        setLockerToDelete(null);
         loadLockers();
       } catch (err) {
         alert('Failed to delete locker: ' + err.message);
+        setShowDeleteModal(false);
+        setLockerToDelete(null);
       }
     }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setLockerToDelete(null);
   };
 
   const handleLockerClick = (lockerId) => {
@@ -92,10 +109,12 @@ function HomePage() {
                 <h2>{locker.name}</h2>
                 <button
                   className="delete-button"
-                  onClick={(e) => handleDeleteLocker(locker.id, e)}
+                  onClick={(e) => handleDeleteClick(locker.id, e)}
                   title="Delete locker"
                 >
-                  ×
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
                 </button>
               </div>
               <div className="locker-card-body">
@@ -113,6 +132,16 @@ function HomePage() {
           onSave={handleCreateLocker}
         />
       )}
+
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        title="Delete Locker"
+        message="Are you sure you want to delete this locker? All associated assets will also be permanently deleted. This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </div>
   );
 }
