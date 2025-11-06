@@ -9,12 +9,12 @@ class AssetModel:
     
     @staticmethod
     def get_by_locker_id(locker_id):
-        """Get all assets for a specific locker."""
+        """Get all active assets for a specific locker."""
         conn = get_connection()
         cursor = conn.cursor()
         cursor.execute('''
             SELECT * FROM Asset 
-            WHERE locker_id = ? 
+            WHERE locker_id = ? AND status = 'active'
             ORDER BY created_at DESC
         ''', (locker_id,))
         assets = [dict(row) for row in cursor.fetchall()]
@@ -23,10 +23,10 @@ class AssetModel:
     
     @staticmethod
     def get_by_id(asset_id):
-        """Get an asset by ID."""
+        """Get an active asset by ID."""
         conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM Asset WHERE id = ?', (asset_id,))
+        cursor.execute("SELECT * FROM Asset WHERE id = ? AND status = 'active'", (asset_id,))
         row = cursor.fetchone()
         conn.close()
         return dict(row) if row else None
@@ -40,8 +40,8 @@ class AssetModel:
         timestamp = get_timestamp()
         cursor.execute('''
             INSERT INTO Asset (locker_id, org_id, user_id, name, asset_type, 
-                             worth_on_creation, details, creation_date, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                             worth_on_creation, details, creation_date, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
         ''', (locker_id, org_id, user_id, name, asset_type, worth_on_creation, 
               details, creation_date, timestamp, timestamp))
         asset_id = cursor.lastrowid
@@ -59,7 +59,7 @@ class AssetModel:
             UPDATE Asset 
             SET name = ?, asset_type = ?, worth_on_creation = ?, 
                 details = ?, creation_date = ?, updated_at = ?
-            WHERE id = ?
+            WHERE id = ? AND status = 'active'
         ''', (name, asset_type, worth_on_creation, details, creation_date, timestamp, asset_id))
         conn.commit()
         conn.close()
@@ -67,11 +67,33 @@ class AssetModel:
     
     @staticmethod
     def delete(asset_id):
-        """Delete an asset (cascade will delete associated detail records)."""
+        """Soft delete an asset by setting status to 'deleted'."""
         conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute('DELETE FROM Asset WHERE id = ?', (asset_id,))
+        timestamp = get_timestamp()
+        # Check if asset exists and is active
+        cursor.execute("SELECT id FROM Asset WHERE id = ? AND status = 'active'", (asset_id,))
+        if not cursor.fetchone():
+            conn.close()
+            return False
+        # Soft delete the asset
+        cursor.execute('''
+            UPDATE Asset 
+            SET status = 'deleted', updated_at = ?
+            WHERE id = ? AND status = 'active'
+        ''', (timestamp, asset_id))
+        # Soft delete associated detail records
+        cursor.execute('''
+            UPDATE AssetDetail_Jewellery 
+            SET status = 'deleted', updated_at = ?
+            WHERE asset_id = ? AND status = 'active'
+        ''', (timestamp, asset_id))
+        cursor.execute('''
+            UPDATE AssetDetail_Document 
+            SET status = 'deleted', updated_at = ?
+            WHERE asset_id = ? AND status = 'active'
+        ''', (timestamp, asset_id))
         conn.commit()
         conn.close()
-        return cursor.rowcount > 0
+        return True
 

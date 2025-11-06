@@ -35,6 +35,7 @@ def init_database():
             name TEXT NOT NULL,
             location_name TEXT NOT NULL,
             address TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'deleted')),
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
         )
@@ -52,9 +53,10 @@ def init_database():
             worth_on_creation REAL,
             details TEXT,
             creation_date TEXT,
+            status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'deleted')),
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
-            FOREIGN KEY (locker_id) REFERENCES Locker(id) ON DELETE CASCADE
+            FOREIGN KEY (locker_id) REFERENCES Locker(id)
         )
     ''')
     
@@ -65,9 +67,10 @@ def init_database():
             material_type TEXT,
             material_grade TEXT,
             gifting_details TEXT,
+            status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'deleted')),
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
-            FOREIGN KEY (asset_id) REFERENCES Asset(id) ON DELETE CASCADE
+            FOREIGN KEY (asset_id) REFERENCES Asset(id)
         )
     ''')
     
@@ -76,11 +79,37 @@ def init_database():
         CREATE TABLE IF NOT EXISTS AssetDetail_Document (
             asset_id INTEGER PRIMARY KEY,
             document_type TEXT,
+            status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'deleted')),
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
-            FOREIGN KEY (asset_id) REFERENCES Asset(id) ON DELETE CASCADE
+            FOREIGN KEY (asset_id) REFERENCES Asset(id)
         )
     ''')
+    
+    # Add status column to existing tables if they don't have it (migration)
+    try:
+        cursor.execute("ALTER TABLE Locker ADD COLUMN status TEXT DEFAULT 'active'")
+        cursor.execute("UPDATE Locker SET status = 'active' WHERE status IS NULL")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+    
+    try:
+        cursor.execute("ALTER TABLE Asset ADD COLUMN status TEXT DEFAULT 'active'")
+        cursor.execute("UPDATE Asset SET status = 'active' WHERE status IS NULL")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+    
+    try:
+        cursor.execute("ALTER TABLE AssetDetail_Jewellery ADD COLUMN status TEXT DEFAULT 'active'")
+        cursor.execute("UPDATE AssetDetail_Jewellery SET status = 'active' WHERE status IS NULL")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+    
+    try:
+        cursor.execute("ALTER TABLE AssetDetail_Document ADD COLUMN status TEXT DEFAULT 'active'")
+        cursor.execute("UPDATE AssetDetail_Document SET status = 'active' WHERE status IS NULL")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
     
     conn.commit()
     conn.close()

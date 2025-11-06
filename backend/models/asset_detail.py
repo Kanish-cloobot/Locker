@@ -10,10 +10,10 @@ class AssetDetailJewelleryModel:
     
     @staticmethod
     def get_by_asset_id(asset_id):
-        """Get jewellery details for an asset."""
+        """Get active jewellery details for an asset."""
         conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM AssetDetail_Jewellery WHERE asset_id = ?', (asset_id,))
+        cursor.execute("SELECT * FROM AssetDetail_Jewellery WHERE asset_id = ? AND status = 'active'", (asset_id,))
         row = cursor.fetchone()
         conn.close()
         return dict(row) if row else None
@@ -26,8 +26,8 @@ class AssetDetailJewelleryModel:
         timestamp = get_timestamp()
         cursor.execute('''
             INSERT INTO AssetDetail_Jewellery (asset_id, material_type, material_grade, 
-                                              gifting_details, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?)
+                                              gifting_details, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, 'active', ?, ?)
         ''', (asset_id, material_type, material_grade, gifting_details, timestamp, timestamp))
         conn.commit()
         conn.close()
@@ -41,7 +41,7 @@ class AssetDetailJewelleryModel:
         cursor.execute('''
             UPDATE AssetDetail_Jewellery 
             SET material_type = ?, material_grade = ?, gifting_details = ?, updated_at = ?
-            WHERE asset_id = ?
+            WHERE asset_id = ? AND status = 'active'
         ''', (material_type, material_grade, gifting_details, timestamp, asset_id))
         conn.commit()
         conn.close()
@@ -49,10 +49,15 @@ class AssetDetailJewelleryModel:
     
     @staticmethod
     def delete(asset_id):
-        """Delete jewellery details for an asset."""
+        """Soft delete jewellery details for an asset."""
         conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute('DELETE FROM AssetDetail_Jewellery WHERE asset_id = ?', (asset_id,))
+        timestamp = get_timestamp()
+        cursor.execute('''
+            UPDATE AssetDetail_Jewellery 
+            SET status = 'deleted', updated_at = ?
+            WHERE asset_id = ?
+        ''', (timestamp, asset_id))
         conn.commit()
         conn.close()
         return cursor.rowcount > 0
@@ -63,10 +68,10 @@ class AssetDetailDocumentModel:
     
     @staticmethod
     def get_by_asset_id(asset_id):
-        """Get document details for an asset."""
+        """Get active document details for an asset."""
         conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM AssetDetail_Document WHERE asset_id = ?', (asset_id,))
+        cursor.execute("SELECT * FROM AssetDetail_Document WHERE asset_id = ? AND status = 'active'", (asset_id,))
         row = cursor.fetchone()
         conn.close()
         return dict(row) if row else None
@@ -78,8 +83,8 @@ class AssetDetailDocumentModel:
         cursor = conn.cursor()
         timestamp = get_timestamp()
         cursor.execute('''
-            INSERT INTO AssetDetail_Document (asset_id, document_type, created_at, updated_at)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO AssetDetail_Document (asset_id, document_type, status, created_at, updated_at)
+            VALUES (?, ?, 'active', ?, ?)
         ''', (asset_id, document_type, timestamp, timestamp))
         conn.commit()
         conn.close()
@@ -93,7 +98,7 @@ class AssetDetailDocumentModel:
         cursor.execute('''
             UPDATE AssetDetail_Document 
             SET document_type = ?, updated_at = ?
-            WHERE asset_id = ?
+            WHERE asset_id = ? AND status = 'active'
         ''', (document_type, timestamp, asset_id))
         conn.commit()
         conn.close()
@@ -101,10 +106,15 @@ class AssetDetailDocumentModel:
     
     @staticmethod
     def delete(asset_id):
-        """Delete document details for an asset."""
+        """Soft delete document details for an asset."""
         conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute('DELETE FROM AssetDetail_Document WHERE asset_id = ?', (asset_id,))
+        timestamp = get_timestamp()
+        cursor.execute('''
+            UPDATE AssetDetail_Document 
+            SET status = 'deleted', updated_at = ?
+            WHERE asset_id = ?
+        ''', (timestamp, asset_id))
         conn.commit()
         conn.close()
         return cursor.rowcount > 0
